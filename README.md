@@ -65,6 +65,7 @@ Send these as WeChat messages:
 | `/cc explain this code` | Send to agent by alias |
 | `/claude` | Switch default agent to Claude |
 | `/status` | Show current agent info |
+| `/help` | Show help message |
 
 ### Aliases
 

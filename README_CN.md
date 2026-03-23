@@ -66,6 +66,7 @@ docker run -it -v ~/.weclaw:/root/.weclaw ghcr.io/fastclaw-ai/weclaw start
 | `/cc 解释一下这段代码`  | 通过别名发送             |
 | `/claude`               | 切换默认 Agent 为 Claude |
 | `/status`               | 查看当前 Agent 信息      |
+| `/help`                 | 查看帮助信息             |
 
 ### 快捷别名
 

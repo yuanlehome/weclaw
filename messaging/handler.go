@@ -178,6 +178,12 @@ func (h *Handler) HandleMessage(ctx context.Context, client *ilink.Client, msg i
 			log.Printf("[handler] failed to send reply to %s: %v", msg.FromUserID, err)
 		}
 		return
+	} else if trimmed == "/help" {
+		reply := buildHelpText()
+		if err := SendTextReply(ctx, client, msg.FromUserID, reply, msg.ContextToken, clientID); err != nil {
+			log.Printf("[handler] failed to send reply to %s: %v", msg.FromUserID, err)
+		}
+		return
 	}
 
 	// Route: "/agentname message" -> specific agent, otherwise -> default
@@ -300,6 +306,16 @@ func (h *Handler) buildStatus() string {
 
 	info := ag.Info()
 	return fmt.Sprintf("agent: %s\ntype: %s\nmodel: %s", h.defaultName, info.Type, info.Model)
+}
+
+func buildHelpText() string {
+	return `Available commands:
+/agentname - Switch default agent
+/agentname message - Send message to a specific agent
+/status - Show current agent info
+/help - Show this help message
+
+Aliases: /cc(claude) /cx(codex) /cs(cursor) /km(kimi) /gm(gemini) /oc(openclaw) /ocd(opencode)`
 }
 
 func extractText(msg ilink.WeixinMessage) string {
