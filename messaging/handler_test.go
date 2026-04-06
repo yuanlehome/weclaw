@@ -1,11 +1,34 @@
 package messaging
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/fastclaw-ai/weclaw/agent"
 )
+
+type fakeAgent struct {
+	resetConversationIDs []string
+	lastCwd              string
+}
+
+func (f *fakeAgent) Chat(context.Context, string, string) (string, error) {
+	return "", nil
+}
+
+func (f *fakeAgent) ResetSession(_ context.Context, conversationID string) (string, error) {
+	f.resetConversationIDs = append(f.resetConversationIDs, conversationID)
+	return "reset-session", nil
+}
+
+func (f *fakeAgent) Info() agent.AgentInfo {
+	return agent.AgentInfo{Name: "fake"}
+}
+
+func (f *fakeAgent) SetCwd(cwd string) {
+	f.lastCwd = cwd
+}
 
 func newTestHandler() *Handler {
 	return &Handler{agents: make(map[string]agent.Agent)}
@@ -136,5 +159,24 @@ func TestBuildHelpText(t *testing.T) {
 	}
 	if !strings.Contains(text, "/help") {
 		t.Error("help text should mention /help")
+	}
+}
+
+func TestHandleCwdResetsRunningAgentSession(t *testing.T) {
+	tempDir := t.TempDir()
+	h := newTestHandler()
+	ag := &fakeAgent{}
+	h.agents["copilot"] = ag
+
+	reply := h.handleCwd(context.Background(), "wechat-user", "/cwd "+tempDir)
+
+	if reply != "cwd: "+tempDir {
+		t.Fatalf("handleCwd() reply = %q, want %q", reply, "cwd: "+tempDir)
+	}
+	if ag.lastCwd != tempDir {
+		t.Fatalf("agent cwd = %q, want %q", ag.lastCwd, tempDir)
+	}
+	if len(ag.resetConversationIDs) != 1 || ag.resetConversationIDs[0] != "wechat-user" {
+		t.Fatalf("reset conversation IDs = %v, want [wechat-user]", ag.resetConversationIDs)
 	}
 }
