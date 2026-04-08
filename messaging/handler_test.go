@@ -11,6 +11,7 @@ import (
 type fakeAgent struct {
 	resetConversationIDs []string
 	lastCwd              string
+	infoName             string
 }
 
 func (f *fakeAgent) Chat(context.Context, string, string) (string, error) {
@@ -23,7 +24,11 @@ func (f *fakeAgent) ResetSession(_ context.Context, conversationID string) (stri
 }
 
 func (f *fakeAgent) Info() agent.AgentInfo {
-	return agent.AgentInfo{Name: "fake"}
+	name := f.infoName
+	if name == "" {
+		name = "fake"
+	}
+	return agent.AgentInfo{Name: name}
 }
 
 func (f *fakeAgent) SetCwd(cwd string) {
@@ -178,5 +183,26 @@ func TestHandleCwdResetsRunningAgentSession(t *testing.T) {
 	}
 	if len(ag.resetConversationIDs) != 1 || ag.resetConversationIDs[0] != "wechat-user" {
 		t.Fatalf("reset conversation IDs = %v, want [wechat-user]", ag.resetConversationIDs)
+	}
+}
+
+func TestSetDefaultAgentDoesNotClobberNewerDefault(t *testing.T) {
+	h := newTestHandler()
+	codex := &fakeAgent{infoName: "codex"}
+	copilot := &fakeAgent{infoName: "copilot"}
+
+	h.defaultName = "codex"
+	h.agents["codex"] = codex
+
+	h.SetDefaultAgent("copilot", copilot)
+
+	if h.defaultName != "codex" {
+		t.Fatalf("defaultName = %q, want %q", h.defaultName, "codex")
+	}
+	if got := h.agents["codex"]; got != codex {
+		t.Fatalf("codex agent overwritten: got %#v, want %#v", got, codex)
+	}
+	if got := h.agents["copilot"]; got != copilot {
+		t.Fatalf("copilot agent not registered: got %#v, want %#v", got, copilot)
 	}
 }
